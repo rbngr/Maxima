@@ -19,8 +19,13 @@ var Color = class _Color {
   }
 };
 
+// helpers/collision.ts
+function collisionDetection(first, second) {
+  return first.x < second.x + second.width && first.x + first.width > second.x && first.y < second.y + second.height && first.y + first.height > second.y;
+}
+
 // components/component.ts
-var Component2 = class {
+var Component3 = class {
   constructor() {
     this._eventRegistry = /* @__PURE__ */ new Map();
     this.x = 0;
@@ -28,6 +33,7 @@ var Component2 = class {
     this.width = 0;
     this.height = 0;
     this.background = Color.from(255, 255, 255, 1);
+    this._collisionObjects = [];
     this._initHandlers();
   }
   state(state) {
@@ -40,8 +46,21 @@ var Component2 = class {
   }
   draw() {
   }
+  collision(component) {
+    this._collisionObjects.push(component);
+    return this;
+  }
   delegateEvent(event) {
     const registryEvent = this._eventRegistry.get(event.eventName);
+    let collisionDetected = false;
+    this._collisionObjects.forEach((c) => {
+      if (collisionDetection(this, c)) {
+        collisionDetected = true;
+      }
+    });
+    if (collisionDetected) {
+      return;
+    }
     if (registryEvent) {
       registryEvent(this, event, this._state);
     }
@@ -52,47 +71,68 @@ var Component2 = class {
   }
   click(handler) {
     this._eventRegistry.set("click", handler);
+    return this;
   }
   drag(handler) {
     this._eventRegistry.set("drag", handler);
+    return this;
   }
 };
 
-// components/rectangle.ts
-var Rectangle = class _Rectangle extends Component2 {
+// components/toggle.ts
+var Toggle = class _Toggle extends Component3 {
+  constructor() {
+    super(...arguments);
+    this._state = {
+      isDragging: false,
+      on: false
+    };
+  }
   static of(props) {
-    const rect2 = new _Rectangle();
-    rect2.background = props.background;
-    rect2.x = props.x;
-    rect2.y = props.y;
-    rect2.width = props.width;
-    rect2.height = props.height;
-    return rect2;
-  }
-  draw() {
-    mgraphics.set_source_rgba(this.background.color);
-    mgraphics.rectangle(this.x, this.y, this.width, this.height);
-    mgraphics.fill();
-  }
-  ondrag(component, event) {
-    if (inBound(event.x, event.y, component)) {
-      post("deine mutter");
-    }
+    const rect = new _Toggle();
+    rect.onColor = props.onColor, rect.offColor = props.offColor;
+    rect.x = props.x;
+    rect.y = props.y;
+    rect.width = props.width;
+    rect.height = props.height;
+    return rect;
   }
   onclick(component, event) {
     if (inBound(event.x, event.y, component)) {
-      post(this._state.value);
+      this._state.on = !this._state.on;
     }
+  }
+  ondrag(component, event) {
+    if (inBound(event.x, event.y, component)) {
+      if (event.mouseUp === 1) {
+        this._state.isDragging = true;
+      }
+    }
+    if (event.mouseUp === 0) {
+      this._state.isDragging = false;
+    }
+    if (this._state.isDragging) {
+      this.x = event.x;
+    }
+  }
+  draw() {
+    if (this._state.on) {
+      mgraphics.set_source_rgba(this.onColor.color);
+    } else {
+      mgraphics.set_source_rgba(this.offColor.color);
+    }
+    mgraphics.rectangle(this.x, this.y, this.width, this.height);
+    mgraphics.fill();
   }
 };
 
 // eventing/event.ts
-var Event3 = class {
+var Event2 = class {
   constraints() {
     return true;
   }
 };
-var ClickEvent3 = class extends Event3 {
+var ClickEvent3 = class extends Event2 {
   constructor(x, y) {
     super();
     this.eventName = "click";
@@ -104,13 +144,15 @@ var ClickEvent3 = class extends Event3 {
     return true;
   }
 };
-var DragEvent3 = class extends Event3 {
-  constructor(x, y) {
+var DragEvent3 = class extends Event2 {
+  constructor(x, y, mouseUp) {
     super();
     this.eventName = "drag";
     this.x = 0;
     this.y = 0;
+    this.mouseUp = 0;
     this.x = x, this.y = y;
+    this.mouseUp = mouseUp;
   }
   constraints() {
     return true;
@@ -124,6 +166,7 @@ var Maxima = class {
   }
   add(component) {
     this._registry.push(component);
+    post(this._registry.length);
   }
   addAll(...components) {
     components.forEach((c) => {
@@ -145,22 +188,32 @@ mgraphics.init();
 mgraphics.autofill = 1;
 mgraphics.relative_coords = 0;
 var maxima = new Maxima();
-var rect = Rectangle.of({
+var toggle = Toggle.of({
   x: 0,
   y: 0,
-  width: 100,
-  height: 100,
-  background: Color.from(255, 255, 255, 1)
-}).state({
-  value: 39
+  width: 30,
+  height: 30,
+  onColor: Color.from(255, 255, 255, 1),
+  offColor: Color.from(255, 255, 255, 0.2)
 });
-maxima.add(rect);
+var toggle2 = Toggle.of({
+  x: 100,
+  y: 0,
+  width: 30,
+  height: 30,
+  onColor: Color.from(255, 255, 255, 1),
+  offColor: Color.from(255, 255, 255, 0.2)
+}).collision(toggle);
+maxima.add(toggle);
+maxima.add(toggle2);
 function paint() {
   maxima.draw();
 }
 function onclick(x, y) {
   maxima.bindEvent(new ClickEvent3(x, y));
+  mgraphics.redraw();
 }
-function ondrag(x, y) {
-  maxima.bindEvent(new DragEvent3(x, y));
+function ondrag(x, y, button) {
+  maxima.bindEvent(new DragEvent3(x, y, button));
+  mgraphics.redraw();
 }

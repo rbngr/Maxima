@@ -7,12 +7,12 @@ export class Maxima {
 
   add(component: Component<any>) {
     this._registry.push(component)
+    post(this._registry.length)
   }
 
   addAll(...components: Component<any>[]) {
     components.forEach(c => {
       this._registry.push(c)
-
     })
   }
 

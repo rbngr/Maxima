@@ -1,7 +1,7 @@
 import { ComponentHandlerFunction } from "../eventing/event-registry";
 import { ClickEvent, DragEvent, Event } from "../eventing/event";
 import { Color } from "../graphics/color";
-import { RectangleState } from "./rectangle";
+import { collisionDetection } from "../helpers/collision";
 
 export abstract class Component<T> {
 
@@ -14,6 +14,8 @@ export abstract class Component<T> {
   width: number = 0
   height: number = 0
   background: Color = Color.from(255, 255, 255, 1)
+
+  private _collisionObjects: Component<any>[] = []
 
   constructor() {
     this._initHandlers()
@@ -33,9 +35,24 @@ export abstract class Component<T> {
 
   }
 
+  collision(component: Component<any>) {
+    this._collisionObjects.push(component)
+    return this
+  }
+
   delegateEvent(event: Event) {
     const registryEvent = this._eventRegistry.get(event.eventName)
     // Check if click position of event is in bound of target
+    let collisionDetected = false
+    this._collisionObjects.forEach(c => {
+      if(collisionDetection(this, c)) {
+        collisionDetected = true
+      }
+    })
+
+    if(collisionDetected) {
+      return
+    }
 
     if(registryEvent) {
       registryEvent(this, event, this._state)
@@ -52,9 +69,11 @@ export abstract class Component<T> {
 
   click(handler: (component: Component<T>, event: ClickEvent, state: T) => void) {
     this._eventRegistry.set("click", handler)
+    return this;
   }
 
   drag(handler: (component: Component<T>, event: DragEvent, state: T) => void) {
     this._eventRegistry.set("drag", handler)
+    return this;
   }
 }

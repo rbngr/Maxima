@@ -25,15 +25,17 @@ export class ClickEvent extends Event {
 
 export class DragEvent extends Event {
 
-  constructor(x, y) {
+  constructor(x, y, mouseUp) {
     super()
     this.x = x,
     this.y = y
+    this.mouseUp = mouseUp
   }
 
   eventName: string = "drag"
   x = 0
   y = 0
+  mouseUp = 0
 
   constraints() {
     return true
