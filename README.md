@@ -9,6 +9,7 @@ Maxima is a v8ui / jsui graphical extension framework to build rich js interface
 
 - [ ] Collision detection between elements
 - [ ] implement missing jsthis events
+- [ ] lock global eventing when currently an event is firing 
 
 ```ts
 const maxima = new Maxima()
