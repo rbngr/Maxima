@@ -26,10 +26,10 @@ function paint() {
   maxima.draw()
 }
 
-function onclick(x, y) {
+function onclick(x: number, y: number) {
   maxima.bindEvent(new ClickEvent(x, y))
 }
 
-function ondrag(x, y) {
+function ondrag(x: number, y: number) {
   maxima.bindEvent(new DragEvent(x, y))
 }
