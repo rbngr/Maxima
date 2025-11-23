@@ -1,5 +1,8 @@
 # Maxima
 
+> [!CAUTION]
+> The repository has not been published to NPM/JSR.
+
 Maxima is a v8ui / jsui graphical extension framework to build rich js interfaces in max / max4live
 
 ```ts
